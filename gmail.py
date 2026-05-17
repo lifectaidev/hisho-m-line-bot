@@ -1,3 +1,4 @@
+import json
 import os
 import base64
 from dotenv import load_dotenv
@@ -10,7 +11,10 @@ from googleapiclient.discovery import build
 from anthropic import Anthropic
 
 # GmailのAPIで使う権限（スコープ）
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/calendar'
+]
 
 claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -18,22 +22,35 @@ def get_gmail_service():
     """Gmail APIに接続するための準備をする関数"""
     creds = None
     
-    # token.jsonが存在すれば読み込む（前回の認証情報）
-    if os.path.exists('token.json'):
+    # 環境変数からtoken情報を読み込む（Railway用）
+    token_json = os.getenv("GOOGLE_TOKEN_JSON")
+    if token_json:
+        creds = Credentials.from_authorized_user_info(
+            json.loads(token_json), SCOPES)
+    
+    # ローカル環境ではtoken.jsonから読み込む
+    elif os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     
-    # 認証情報がない・期限切れの場合は再認証
+    # 認証情報がない・期限切れの場合
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secret.json', SCOPES)
+            # ローカルのみ再認証可能
+            client_secret_json = os.getenv("GOOGLE_CLIENT_SECRET_JSON")
+            if client_secret_json:
+                flow = InstalledAppFlow.from_client_config(
+                    json.loads(client_secret_json), SCOPES)
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'client_secret.json', SCOPES)
             creds = flow.run_local_server(port=8080)
-        
-        # 認証情報をtoken.jsonに保存
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+            
+            # ローカルの場合のみtoken.jsonに保存
+            if not token_json:
+                with open('token.json', 'w') as token:
+                    token.write(creds.to_json())
     
     return build('gmail', 'v1', credentials=creds)
 
