@@ -134,13 +134,33 @@ def create_reply_draft(user_id, instruction):
     """返信メールの下書きを作成する関数"""
     service = get_gmail_service()
     
-    # 直近の未読メールを1件取得
+    # Claudeに検索キーワードを抽出してもらう
+    keyword_response = claude.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=100,
+        system="メール返信の指示から、Gmailで検索するキーワードを抽出してください。件名らしきものがあれば'subject:キーワード'、人名らしきものがあれば'from:名前'の形式で返してください。複数ある場合はスペースで区切ってください。キーワードのみ返答し、説明は不要です。",
+        messages=[{
+            "role": "user",
+            "content": instruction
+        }]
+    )
+    
+    keyword = keyword_response.content[0].text.strip()
+    
+    # キーワード + 30日以内で検索
+    query = f'{keyword} newer_than:30d'
     results = service.users().messages().list(
-        userId='me', q='is:unread', maxResults=1).execute()
+        userId='me', q=query, maxResults=1).execute()
     messages = results.get('messages', [])
     
+    # ヒットしない場合は未読メール1件にフォールバック
     if not messages:
-        return "返信できる未読メールが見つかりません。"
+        results = service.users().messages().list(
+            userId='me', q='is:unread', maxResults=1).execute()
+        messages = results.get('messages', [])
+    
+    if not messages:
+        return "該当するメールが見つかりません。件名や送信者名を指定してみてください。"
     
     msg = service.users().messages().get(
         userId='me', id=messages[0]['id'], format='full').execute()
@@ -173,7 +193,6 @@ def create_reply_draft(user_id, instruction):
     }
     
     return f"📝 下書きを作成しました。\n\n宛先：{sender}\n件名：Re: {subject}\n\n{draft_text}\n\n「送信して」で送信、「修正して＋内容」で修正できます。"
-
 
 def send_reply(user_id):
     """下書きのメールを送信する関数"""
