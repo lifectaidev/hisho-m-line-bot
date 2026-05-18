@@ -154,7 +154,7 @@ def create_reply_draft(user_id, instruction):
     response = claude.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=500,
-        system="メールの返信文を作成してください。日本語で丁寧に、簡潔に書いてください。",
+        system="メールの返信文を作成してください。日本語で丁寧に、簡潔に書いてください。MarkdownやHTMLは使わず、プレーンテキストのみで書いてください。",
         messages=[{
             "role": "user",
             "content": f"件名：{subject}\n送信者：{sender}\n指示：{instruction}"
@@ -214,7 +214,7 @@ def revise_draft(user_id, instruction):
     response = claude.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=500,
-        system="メールの返信文を修正してください。日本語で丁寧に、簡潔に書いてください。",
+        system="メールの返信文を修正してください。日本語で丁寧に、簡潔に書いてください。MarkdownやHTMLは使わず、プレーンテキストのみで書いてください。",
         messages=[{
             "role": "user",
             "content": f"現在の下書き：{session['draft']}\n修正指示：{instruction}"
