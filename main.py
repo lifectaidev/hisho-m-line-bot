@@ -49,6 +49,9 @@ def check_task_deadlines():
             diff = deadline - now
             if 0 < diff.total_seconds() < 86400:
                 warning_tasks.append(task)
+            elif diff.total_seconds() <= 0:
+                # 締切を過ぎているタスクは「期限切れ」にする
+                supabase.table("tasks").update({"status": "期限切れ"}).eq("id", task["id"]).execute()
     
     if warning_tasks:
         user_id = os.getenv("LINE_USER_ID")
