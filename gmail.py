@@ -81,7 +81,11 @@ def get_unread_emails():
         # ヘッダーから件名と送信者を取得
         headers = msg['payload']['headers']
         subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '件名なし')
-        sender = next((h['value'] for h in headers if h['name'] == 'From'), '送信者不明')
+        sender_raw = next((h['value'] for h in headers if h['name'] == 'From'), '')
+        # "名前 <email>" の形式からメールアドレスだけ取り出す
+        import re
+        match = re.search(r'<(.+?)>', sender_raw)
+        sender = match.group(1) if match else sender_raw
         
         # 本文を取得
         body = get_email_body(msg)
