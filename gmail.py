@@ -165,7 +165,10 @@ def create_reply_draft(user_id, instruction):
 
     headers = msg['payload']['headers']
     subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '件名なし')
-    sender = next((h['value'] for h in headers if h['name'] == 'From'), '')
+    sender_raw = next((h['value'] for h in headers if h['name'] == 'From'), '')
+    import re
+    match = re.search(r'<(.+?)>', sender_raw)
+    sender = match.group(1) if match else sender_raw
     message_id = next((h['value'] for h in headers if h['name'] == 'Message-ID'), '')
     thread_id = msg.get('threadId', '')
 
