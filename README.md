@@ -4,7 +4,7 @@
 
 ## 概要
 LINEで話しかけると、Claudeが返答する。
-Phase 1では以下の機能を実装する。
+Phase 1では以下の機能を実装しました。
 
 - LINEでClaudeと会話
 - Gmailの未読整理・要約
@@ -41,6 +41,15 @@ uvicorn main:app --reload
 - 要件定義書 → `docs/requirements.md`
 
 ## 開発者
+
 石破昇悟 / Lifect
+
 - GitHub: https://github.com/lifectai
 - Qiita: https://qiita.com/Lifect
+- 開発記事: https://qiita.com/Lifect/items/a78081bd585bd6f2142f
+
+## Phase 1 完成記事
+
+詳しい設計・実装・失敗談はこちら：
+
+[「言わなくても動く参謀」を目指して。自分専用AIエージェント「秘書M」をゼロから作った話（Phase 1: MVP編）](https://qiita.com/Lifect/items/a78081bd585bd6f2142f)
