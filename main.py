@@ -9,6 +9,7 @@ from gmail import get_unread_emails, create_reply_draft, send_reply, revise_draf
 from calendar_service import get_today_events, get_tomorrow_events, add_event, update_event
 from task_service import add_task, suggest_task, get_progress, complete_task
 from conversation_service import save_message, get_recent_messages
+from digital_twin_service import update_digital_twin, get_summary
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timezone
 
@@ -180,7 +181,13 @@ def handle_message(event):
             reply_text = "締切チェックを実行しました。"
         except Exception as e:
             reply_text = f"締切チェック中にエラーが発生しました：{str(e)}"
-    
+
+    elif "プロファイル確認" in user_message:
+        try:
+            reply_text = get_summary()
+        except Exception as e:
+            reply_text = f"プロファイル確認中にエラーが発生しました：{str(e)}"
+
     else:
         # 過去の会話履歴を取得
         history = get_recent_messages(limit=10)
@@ -201,7 +208,18 @@ def handle_message(event):
 
         # 秘書Mの返答を保存
         save_message("assistant", reply_text)
-    
+
+        # LINEへ返答後、デジタルツインを更新
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_text)
+        )
+        try:
+            update_digital_twin(f"昇悟：{user_message}\n秘書M：{reply_text}")
+        except Exception:
+            pass
+        return
+
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=reply_text)
