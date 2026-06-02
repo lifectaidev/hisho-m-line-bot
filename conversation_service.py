@@ -4,11 +4,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Supabaseクライアントの初期化
 supabase = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_KEY")
 )
+
+# .envのHISTORY_LIMITで上書き可能（デフォルト10件）
+HISTORY_LIMIT = int(os.getenv("HISTORY_LIMIT", 10))
 
 def save_message(role: str, content: str):
     """会話をSupabaseに保存する"""
@@ -20,7 +22,7 @@ def save_message(role: str, content: str):
     except Exception as e:
         print(f"会話保存エラー: {e}")
 
-def get_recent_messages(limit: int = 10) -> list:
+def get_recent_messages(limit: int = HISTORY_LIMIT) -> list:
     """直近の会話履歴を取得してClaudeに渡せる形式で返す"""
     try:
         result = supabase.table("conversations")\
@@ -29,7 +31,6 @@ def get_recent_messages(limit: int = 10) -> list:
             .limit(limit)\
             .execute()
 
-        # 古い順に並び替えてから返す
         messages = result.data[::-1]
         return [{"role": m["role"], "content": m["content"]} for m in messages]
 
