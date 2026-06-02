@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from gmail import get_unread_emails, create_reply_draft, send_reply, revise_draft
 from calendar_service import get_today_events, get_tomorrow_events, add_event, update_event
 from task_service import add_task, suggest_task, get_progress, complete_task
+from conversation_service import save_message, get_recent_messages
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timezone
 
@@ -181,13 +182,25 @@ def handle_message(event):
             reply_text = f"締切チェック中にエラーが発生しました：{str(e)}"
     
     else:
+        # 過去の会話履歴を取得
+        history = get_recent_messages(limit=10)
+
+        # 今のメッセージを履歴に追加
+        history.append({"role": "user", "content": user_message})
+
+        # 昇悟さんのメッセージを保存
+        save_message("user", user_message)
+
         response = claude.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1000,
             system="あなたは昇悟さん専用の秘書Mです。簡潔に、具体的に答えてください。",
-            messages=[{"role": "user", "content": user_message}]
+            messages=history
         )
         reply_text = response.content[0].text
+
+        # 秘書Mの返答を保存
+        save_message("assistant", reply_text)
     
     line_bot_api.reply_message(
         event.reply_token,
