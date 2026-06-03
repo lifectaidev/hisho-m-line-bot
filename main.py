@@ -10,6 +10,7 @@ from calendar_service import get_today_events, get_tomorrow_events, add_event, u
 from task_service import add_task, suggest_task, get_progress, complete_task
 from conversation_service import save_message, get_recent_messages
 from digital_twin_service import update_digital_twin, get_summary
+from strategist_service import analyze_with_strategist
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timezone
 
@@ -216,6 +217,15 @@ def handle_message(event):
         )
         try:
             update_digital_twin(f"昇悟：{user_message}\n秘書M：{reply_text}")
+        except Exception:
+            pass
+
+        try:
+            comment = analyze_with_strategist(user_message, reply_text)
+            if comment:
+                user_id = os.getenv("LINE_USER_ID")
+                if user_id:
+                    line_bot_api.push_message(user_id, TextSendMessage(text=comment))
         except Exception:
             pass
         return
