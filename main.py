@@ -103,8 +103,7 @@ async def webhook(request: Request):
 def handle_message(event):
     user_message = event.message.text
     user_id = event.source.user_id
-    print(f"[LINE user_id] {user_id}")
-
+    
     # キーワードで処理を振り分け
     if "メール確認" in user_message:
         try:
