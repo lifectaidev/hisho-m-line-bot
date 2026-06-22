@@ -1,5 +1,7 @@
 import os
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from anthropic import Anthropic
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -17,6 +19,7 @@ from datetime import datetime, timezone
 load_dotenv()
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
@@ -86,6 +89,65 @@ scheduler.start()
 @app.get("/")
 def read_root():
     return {"status": "秘書M稼働中"}
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    return templates.TemplateResponse(request, "dashboard.html")
+
+
+@app.get("/api/dashboard")
+async def api_dashboard():
+    from supabase import create_client
+
+    supabase = create_client(
+        os.getenv("SUPABASE_URL"),
+        os.getenv("SUPABASE_KEY")
+    )
+
+    # 今日の予定
+    try:
+        events = get_today_events()
+    except Exception:
+        events = None
+
+    # 未完了タスク
+    try:
+        tasks_result = supabase.table("tasks").select("*").in_(
+            "status", ["未着手", "進行中"]
+        ).execute()
+        tasks = tasks_result.data
+    except Exception:
+        tasks = None
+
+    # 未読メール
+    try:
+        emails = get_unread_emails()
+    except Exception:
+        emails = None
+
+    # デジタルツイン
+    try:
+        digital_twin = get_summary()
+    except Exception:
+        digital_twin = None
+
+    # ブリーフィング履歴（直近5件）
+    try:
+        briefing_result = supabase.table("briefing_logs").select("*").order(
+            "created_at", desc=True
+        ).limit(5).execute()
+        briefing_history = briefing_result.data
+    except Exception:
+        briefing_history = None
+
+    return {
+        "events": events,
+        "tasks": tasks,
+        "emails": emails,
+        "digital_twin": digital_twin,
+        "briefing_history": briefing_history,
+    }
 
 @app.post("/webhook")
 async def webhook(request: Request):
