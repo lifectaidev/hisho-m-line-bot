@@ -77,12 +77,38 @@ def check_task_deadlines():
             )
 
 from briefing_service import send_morning_briefing
+from growth_report_service import generate_growth_report
+
+
+def send_weekly_growth_report():
+    """毎週月曜朝8時に成長レポートをLINEに送信する関数"""
+    user_id = os.getenv("LINE_USER_ID")
+    if not user_id:
+        print("LINE_USER_IDが設定されていません")
+        return
+
+    try:
+        report = generate_growth_report()
+        message = (
+            "📊 週次成長レポート\n\n"
+            f"🌱 今週の成長・変化\n{report.get('growth_this_week', '取得失敗')}\n\n"
+            f"👤 現在状態\n{report.get('current_state', '取得失敗')}\n\n"
+            f"🎯 来週の優先提案\n{report.get('next_week_suggestions', '取得失敗')}"
+        )
+        line_bot_api.push_message(user_id, TextSendMessage(text=message))
+        print("週次成長レポート送信完了")
+    except Exception as e:
+        print(f"週次成長レポート送信失敗：{e}")
+
 
 # 1時間ごとに締切チェックを実行
 scheduler.add_job(check_task_deadlines, 'interval', hours=1)
 
 # 毎朝7時にブリーフィングを送信（日本時間）
 scheduler.add_job(send_morning_briefing, 'cron', hour=7, minute=0, timezone='Asia/Tokyo')
+
+# 毎週月曜朝8時に成長レポートを送信（日本時間）
+scheduler.add_job(send_weekly_growth_report, 'cron', day_of_week='mon', hour=8, minute=0, timezone='Asia/Tokyo')
 
 scheduler.start()
 
@@ -148,6 +174,15 @@ async def api_dashboard():
         "digital_twin": digital_twin,
         "briefing_history": briefing_history,
     }
+
+@app.get("/api/growth-report")
+async def api_growth_report():
+    try:
+        report = generate_growth_report()
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/webhook")
 async def webhook(request: Request):
