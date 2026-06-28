@@ -84,6 +84,25 @@
     .icon-twin     { background: #fdf4ff; }
     .icon-warning  { background: #fff7ed; }
     .icon-history  { background: #f8fafc; }
+    .icon-report   { background: #f0fdfa; }
+
+    .report-section { margin-bottom: 12px; }
+    .report-section:last-child { margin-bottom: 0; }
+    .report-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f766e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .report-text {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
     .card-title {
       font-size: 14px;
@@ -225,6 +244,17 @@
         <span class="loading">取得中...</span>
       </div>
     </div>
+
+    <!-- 成長レポート -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-report">📊</div>
+        <span class="card-title">成長レポート</span>
+      </div>
+      <div class="card-body" id="card-report">
+        <span class="loading">取得中...</span>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -335,7 +365,31 @@
         .replace(/"/g,"&quot;");
     }
 
+    async function loadGrowthReport() {
+      const reportEl = document.getElementById("card-report");
+      try {
+        const res = await fetch("/api/growth-report");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const sections = [
+          { label: "今週の成長・変化", key: "growth_this_week" },
+          { label: "現在状態",         key: "current_state" },
+          { label: "来週の優先提案",   key: "next_week_suggestions" },
+        ];
+
+        reportEl.innerHTML = sections.map(s => `
+          <div class="report-section">
+            <div class="report-label">${escHtml(s.label)}</div>
+            <div class="report-text">${escHtml(data[s.key] || "データなし")}</div>
+          </div>`).join("");
+      } catch (e) {
+        reportEl.innerHTML = '<span class="error">取得失敗</span>';
+      }
+    }
+
     loadDashboard();
+    loadGrowthReport();
   </script>
 </body>
 </html>
