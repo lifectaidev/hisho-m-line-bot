@@ -38,4 +38,8 @@ JSONのみ返してください。キーは growth_this_week / current_state / n
     raw = response.content[0].text.strip().replace("```json", "").replace("```", "").strip()
     report = json.loads(raw)
 
+    for key in ("growth_this_week", "current_state", "next_week_suggestions"):
+        if isinstance(report.get(key), list):
+            report[key] = "\n・".join(report[key])
+
     return report
