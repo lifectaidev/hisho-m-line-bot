@@ -23,7 +23,7 @@ Phase 1では以下の機能を実装しました。
 
 ## セットアップ
 ```bash
-git clone https://github.com/lifectai/hisho-m-line-bot.git
+git clone https://github.com/lifectaidev/hisho-m-line-bot.git
 cd hisho-m-line-bot
 python3 -m venv venv
 source venv/bin/activate
@@ -44,7 +44,7 @@ uvicorn main:app --reload
 
 石破昇悟 / Lifect
 
-- GitHub: https://github.com/lifectai
+- GitHub: https://github.com/lifectaidev
 - Qiita: https://qiita.com/Lifect
 - 開発記事: https://qiita.com/Lifect/items/a78081bd585bd6f2142f
 
